@@ -1,0 +1,16 @@
+{
+  "name": "bot-gerenciador-zyphor",
+  "version": "1.0.0",
+  "description": "Sistema de Gerenciamento e Licenças Zyphor",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.1",
+    "discord.js": "^14.18.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
