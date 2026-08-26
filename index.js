@@ -1,9 +1,168 @@
+const { 
+    Client, 
+    GatewayIntentBits, 
+    EmbedBuilder, 
+    ActionRowBuilder, 
+    ButtonBuilder, 
+    ButtonStyle,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle
+} = require('discord.js');
+const { createClient } = require('@supabase/supabase-js');
+
+// -------------------------------------------------------------
+// 1. CONFIGURAÇÕES E BANCO DE DADOS (SUPABASE)
+// -------------------------------------------------------------
+const SUPABASE_URL = 'https://mwbmwrrzwiobrpeiwvae.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_1sq2Yrw5-uZGX8ekrlY1vw_VHskga7q';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Lista de Owners do Sistema
+const OWNERS_IDS = [
+    "1521362851502227588", 
+    "1533306874513068093"
+];
+
+// IDs dos Servidores
+const CONFIG_SERVIDORES = {
+    vendasGuildId: "1540042508073967767", // Servidor de Vendas
+    admGuildId: "1534610574053474466"      // Servidor ADM
+};
+
+// ID do Bot Gerenciador
+const BOT_GERENCIADOR_ID = "1541917294584668262";
+
+// -------------------------------------------------------------
+// 2. SISTEMA DE EMOJIS CUSTOMIZADOS
+// -------------------------------------------------------------
+const e = {
+    id: "<:ID:1534611999085039786>",
+    alerta: "<:alerta:1534611993410015456>",
+    proibido: "<:Proibido:1534611991929290877>",
+    config: "<:config:1534611990633250937>",
+    horario: "<:horrio:1534611997335883886>",
+    perfil: "<:perfil:1540557352602705990>",
+    fixo: "<:fixo:1541318082574684240>",
+    suporte: "<:suporte:1539845832004870154>",
+    gerenciar: "<:gerenciar:1540870215640809482>",
+    setaEsq: "<:setaladoe:1539124867113295898>",
+    setaDir: "<:setaladod:1539124868727963651>",
+    verde: "<:verde:1540096479501357137>",
+    vermelho: "<:vermelho:1540096477689290842>",
+    amarelo: "<:amarelo:1540096480998596741>",
+    zyphor: "<:zyphor:1540096483276095621>",
+    sms: "<:sms:1539125782335455292>",
+    apagado: "<:apagado:1539124689077665894>",
+    linkExterno: "<:linkexterno:1539124690709385330>",
+
+    ativado: "<a:ativado:1534611985260609607>",
+    desativado: "<a:desativado:1534611986539876463>",
+    loading: "<a:loanding:1534612861211377868>"
+};
+
+// -------------------------------------------------------------
+// 3. INICIALIZAÇÃO DO CLIENT
+// -------------------------------------------------------------
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ]
+});
+
+client.on('ready', () => {
+    console.log(`✅ System Online: Logado como ${client.user.tag}`);
+
+    client.user.setPresence({
+        activities: [{
+            name: 'Zyphor Manager ⚙️',
+            type: 1,
+            url: 'https://www.twitch.tv/discord'
+        }],
+        status: 'online'
+    });
+});
+
+// -------------------------------------------------------------
+// 4. COMANDOS DE TEXTO
+// -------------------------------------------------------------
+client.on('messageCreate', async (message) => {
+    if (message.author.bot || !message.guild) return;
+
+    const prefix = "z.";
+    if (!message.content.startsWith(prefix)) return;
+
+    const args = message.content.slice(prefix.length).trim().split(/ +/);
+    const command = args.shift().toLowerCase();
+
+    // --- COMANDO Z.PAINEL ---
+    if (command === 'painel') {
+        if (message.guild.id !== CONFIG_SERVIDORES.vendasGuildId) {
+            return message.reply(`${e.proibido} Este comando só pode ser usado no **Servidor de Vendas**!`);
+        }
+
+        const embed = new EmbedBuilder()
+            .setTitle(`${e.zyphor} Gerenciamento de Bots & Licenças`)
+            .setDescription(`${e.config} Clique no botão abaixo para abrir o seu painel de controle e gerenciar suas licenças de bot.`)
+            .setColor("#2b2d31")
+            .setFooter({ text: "Zyphor System", iconURL: client.user.displayAvatarURL() });
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('abrir_painel_cliente')
+                .setLabel('Gerenciar Meu Bot')
+                .setEmoji('1540870215640809482')
+                .setStyle(ButtonStyle.Primary)
+        );
+
+        return message.channel.send({ embeds: [embed], components: [row] });
+    }
+
+    // --- COMANDO Z.PAINEL-ADM ---
+    if (command === 'painel-adm') {
+        if (message.guild.id !== CONFIG_SERVIDORES.admGuildId) {
+            return message.reply(`${e.proibido} Este comando é exclusivo do **Servidor de Administração**!`);
+        }
+
+        if (!OWNERS_IDS.includes(message.author.id)) {
+            return message.reply(`${e.proibido} Apenas os Owners cadastrados têm acesso a este painel.`);
+        }
+
+        const embed = new EmbedBuilder()
+            .setTitle(`${e.config} Painel Administrativo`)
+            .setDescription(`${e.alerta} Selecione uma ação para gerenciar, registrar ou remover clientes do banco de dados.`)
+            .setColor("#ff0000");
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('adm_registrar_bot')
+                .setLabel('Registrar Bot')
+                .setEmoji('1540096479501357137')
+                .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+                .setCustomId('adm_gerenciar_tempo')
+                .setLabel('Modificar Licença')
+                .setEmoji('1534611997335883886')
+                .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('adm_remover_bot')
+                .setLabel('Remover Bot/Licença')
+                .setEmoji('1540096477689290842')
+                .setStyle(ButtonStyle.Danger)
+        );
+
+        return message.channel.send({ embeds: [embed], components: [row] });
+    }
+});
+
 // -------------------------------------------------------------
 // 5. INTERAÇÕES DE BOTÕES E MODAIS
 // -------------------------------------------------------------
 client.on('interactionCreate', async (interaction) => {
     if (interaction.isButton()) {
-        // --- PAINEL DO CLIENTE ---
         if (interaction.customId === 'abrir_painel_cliente') {
             const { data: botsCliente, error } = await supabase
                 .from('bots')
@@ -42,7 +201,6 @@ client.on('interactionCreate', async (interaction) => {
             return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
         }
 
-        // --- TRAVA ADM ---
         if (interaction.customId.startsWith('adm_')) {
             if (interaction.guild.id !== CONFIG_SERVIDORES.admGuildId || !OWNERS_IDS.includes(interaction.user.id)) {
                 return interaction.reply({
@@ -51,10 +209,7 @@ client.on('interactionCreate', async (interaction) => {
                 });
             }
 
-            // BOTÃO REGISTRAR BOT (ABRE O FORMULÁRIO)
             if (interaction.customId === 'adm_registrar_bot') {
-                const { ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
-
                 const modal = new ModalBuilder()
                     .setCustomId('modal_registrar_bot')
                     .setTitle('Registrar Nova Licença');
@@ -75,7 +230,7 @@ client.on('interactionCreate', async (interaction) => {
 
                 const diasInput = new TextInputBuilder()
                     .setCustomId('input_dias')
-                    .setLabel('Dias de Licença (ou 0 para Permanente)')
+                    .setLabel('Dias de Licença (0 para Permanente)')
                     .setStyle(TextInputStyle.Short)
                     .setPlaceholder('30')
                     .setRequired(true);
@@ -99,7 +254,6 @@ client.on('interactionCreate', async (interaction) => {
         }
     }
 
-    // --- PROCESSAR O FORMULÁRIO ENVIADO ---
     if (interaction.isModalSubmit() && interaction.customId === 'modal_registrar_bot') {
         const donoId = interaction.fields.getTextInputValue('input_dono_id').trim();
         const marca = interaction.fields.getTextInputValue('input_marca').trim();
@@ -124,8 +278,15 @@ client.on('interactionCreate', async (interaction) => {
         }
 
         return interaction.reply({
-            content: `${e.verde} Bot **${marca}** registrado com sucesso para o usuário <@${donoId}>!`,
+            content: `${e.verde} Bot **${marca}** registrado com sucesso para <@${donoId}>!`,
             ephemeral: true
         });
     }
 });
+
+// -------------------------------------------------------------
+// 6. LOGIN DO BOT
+// -------------------------------------------------------------
+const BOT_TOKEN = process.env.DISCORD_TOKEN || 'SEU_TOKEN_AQUI';
+
+client.login(BOT_TOKEN);
