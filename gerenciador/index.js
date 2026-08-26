@@ -1,8 +1,6 @@
 const {
   Client,
   GatewayIntentBits,
-  REST,
-  Routes,
   SlashCommandBuilder,
   EmbedBuilder,
   ActionRowBuilder,
@@ -17,6 +15,9 @@ const client = new Client({
 });
 
 const e = {
+  ativo: "<a:ativado:1534611985260609607>",
+  desativado: "<a:desativado:1534611986539876463>",
+  proibido: "<:Proibido:1534611991929290877>",
   config: "<:config:1534611990633250937>",
   gerenciar: "<:gerenciar:1540870215640809482>",
   perfil: "<:perfil:1540557352602705990>",
@@ -30,23 +31,12 @@ const e = {
   seta: "<:setinha:1539125798462685316>",
   not: "<:not:1539815573981237388>",
   zyphor: "<:zyphor:1540096483276095621>",
-  proibido: "<:Proibido:1534611991929290877>",
   fechar: "<:fechar:1541318085435199569>",
   atender: "<:atender:1541318084210720799>",
-  fixo: "<:fixo:1541318082574684240>",
-  ativo: "<a:ativado:1534611985260609607>",
-  desativado: "<a:desativado:1534611986539876463>",
-  loading: "<a:loanding:1534612861211377868>",
-  seta2: "<:seta:1539785898693234700>",
-  pingBom: "<a:pingbom:1539786201551077386>",
-  pingRuim: "<a:pingruim:1539786202822217731>"
+  fixo: "<:fixo:1541318082574684240>"
 };
 
-const clientApp = new Client({
-  intents: [GatewayIntentBits.Guilds]
-});
-
-const comandos = [
+const commands = [
   new SlashCommandBuilder()
     .setName("gerenciador")
     .setDescription("Abre o painel do gerenciador.")
@@ -55,20 +45,14 @@ const comandos = [
 client.once("ready", async () => {
   console.log(`${e.ativo} ${client.user.tag} online!`);
 
-  const rest = new REST({ version: "10" })
-    .setToken(process.env.TOKEN);
-
   try {
-    await rest.put(
-      Routes.applicationCommands(client.user.id),
-      {
-        body: comandos.map(c => c.toJSON())
-      }
+    await client.application.commands.set(
+      commands.map(command => command.toJSON())
     );
 
-    console.log(`${e.ativo} /gerenciador registrado.`);
-  } catch (err) {
-    console.error(`${e.proibido} Erro:`, err);
+    console.log(`${e.ativo} /gerenciador registrado com sucesso!`);
+  } catch (error) {
+    console.error(`${e.proibido} Erro ao registrar comando:`, error);
   }
 });
 
@@ -80,32 +64,35 @@ client.on("interactionCreate", async interaction => {
 
     if (!config.owners.includes(interaction.user.id)) {
       return interaction.reply({
-        content: `${e.proibido} Você não possui permissão para utilizar o gerenciador.`,
+        content:
+          `${e.proibido} Você não possui permissão para utilizar o gerenciador.`,
         ephemeral: true
       });
     }
 
     const embed = new EmbedBuilder()
-      .setTitle(`${e.zyphor} Gerenciador`)
+      .setTitle(`${e.zyphor} Zyphor Management`)
       .setDescription(
         `${e.user} Olá, **${interaction.user.username}**!\n\n` +
-        `${e.gerenciar} Utilize os botões abaixo para gerenciar o sistema.\n\n` +
+        `${e.gerenciar} Bem-vindo ao painel de gerenciamento.\n` +
+        `${e.seta} Selecione uma opção abaixo.\n\n` +
         `${e.ativo} **Sistema:** Online\n` +
         `${e.id} **Administrador:** <@${interaction.user.id}>`
       )
       .setFooter({
-        text: "Zyphor • Gerenciador"
+        text: "Zyphor Management"
       });
 
-    const linha1 = new ActionRowBuilder().addComponents(
+    const row1 = new ActionRowBuilder().addComponents(
+
       new ButtonBuilder()
         .setCustomId("gerenciar")
-        .setLabel("Gerenciar Bots")
+        .setLabel("Gerenciar")
         .setEmoji("1540870215640809482")
         .setStyle(ButtonStyle.Primary),
 
       new ButtonBuilder()
-        .setCustomId("clientes")
+        .setCustomId("perfil")
         .setLabel("Clientes")
         .setEmoji("1540557352602705990")
         .setStyle(ButtonStyle.Secondary),
@@ -117,7 +104,8 @@ client.on("interactionCreate", async interaction => {
         .setStyle(ButtonStyle.Secondary)
     );
 
-    const linha2 = new ActionRowBuilder().addComponents(
+    const row2 = new ActionRowBuilder().addComponents(
+
       new ButtonBuilder()
         .setCustomId("config")
         .setLabel("Configuração")
@@ -128,12 +116,18 @@ client.on("interactionCreate", async interaction => {
         .setCustomId("stats")
         .setLabel("Estatísticas")
         .setEmoji("1539785898693234700")
-        .setStyle(ButtonStyle.Success)
+        .setStyle(ButtonStyle.Success),
+
+      new ButtonBuilder()
+        .setCustomId("suporte")
+        .setLabel("Suporte")
+        .setEmoji("1539845832004870154")
+        .setStyle(ButtonStyle.Secondary)
     );
 
     return interaction.reply({
       embeds: [embed],
-      components: [linha1, linha2],
+      components: [row1, row2],
       ephemeral: true
     });
   }
@@ -153,16 +147,15 @@ client.on("interactionCreate", async interaction => {
         return interaction.reply({
           content:
             `${e.gerenciar} **Gerenciar Bots**\n\n` +
-            `${e.ativo} Sistema de gerenciamento em preparação.\n\n` +
-            `${e.seta} Próximo: cadastro dos bots, cliente, servidor e expiração.`,
+            `${e.seta} Aqui ficará o sistema para adicionar, editar, remover e transferir bots.`,
           ephemeral: true
         });
 
-      case "clientes":
+      case "perfil":
         return interaction.reply({
           content:
             `${e.perfil} **Clientes**\n\n` +
-            `Nenhum cliente cadastrado ainda.`,
+            `${e.user} Nenhum cliente cadastrado ainda.`,
           ephemeral: true
         });
 
@@ -170,30 +163,4 @@ client.on("interactionCreate", async interaction => {
         return interaction.reply({
           content:
             `${e.horario} **Expirações**\n\n` +
-            `${e.ativo} Sistema de expiração será conectado ao banco de dados.`,
-          ephemeral: true
-        });
-
-      case "config":
-        return interaction.reply({
-          content:
-            `${e.config} **Configuração**\n\n` +
-            `${e.seta} Configurações do gerenciador serão adicionadas aqui.`,
-          ephemeral: true
-        });
-
-      case "stats":
-        return interaction.reply({
-          content:
-            `📊 **Estatísticas**\n\n` +
-            `${e.gerenciar} Bots: **0**\n` +
-            `${e.user} Clientes: **0**\n` +
-            `${e.ativo} Ativos: **0**\n` +
-            `${e.desativado} Expirados: **0**`,
-          ephemeral: true
-        });
-    }
-  }
-});
-
-client.login(process.env.TOKEN);
+            `${e.ativo} O sistema automático
